@@ -18,12 +18,16 @@ export class BearerTokenVerifyProvider
 
   value(): VerifyFunction.BearerFn {
     return async (token: string) => {
+     const remo =  await  this.revokedTokenRepository.get(token);
+     console.log(remo);
       if (token && (await this.revokedTokenRepository.get(token))) {
         throw new HttpErrors.Unauthorized(AuthenticateErrorKeys.TokenRevoked);
       }
+      console.log("remo");
       const user = verify(token, process.env.JWT_SECRET as string, {
         issuer: process.env.JWT_ISSUER,
       }) as AuthUser;
+      console.log("Antes");
       return user;
     };
   }

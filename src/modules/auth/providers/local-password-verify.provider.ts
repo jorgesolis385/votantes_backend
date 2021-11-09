@@ -16,7 +16,7 @@ export class LocalPasswordVerifyProvider
 
   value(): VerifyFunction.LocalPasswordFn {
     return async (username: string, password: string) => {
-      const user: AuthUser = new AuthUser(
+           const user: AuthUser = new AuthUser(
         await this.userRepository.verifyPassword(username, password),
       );
       user.permissions = [];

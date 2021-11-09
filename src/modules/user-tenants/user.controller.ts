@@ -32,7 +32,7 @@ export class UserController {
     public userTenantRepo: UserTenantRepository,
   ) {}
 
-  @authenticate(STRATEGY.BEARER)
+ @authenticate(STRATEGY.BEARER)
   @authorize({
     permissions: [PermissionKey.CreateAnyUser, PermissionKey.CreateTenantUser],
   })

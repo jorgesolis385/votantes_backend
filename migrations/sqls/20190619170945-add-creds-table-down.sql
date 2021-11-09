@@ -1,4 +1,4 @@
-SET search_path TO lbstarter,public;
+SET search_path TO votantes,public;
 
 ALTER TABLE users ADD "password" varchar(60);
 UPDATE users set password=user_credentials.password from (select user_id, password from user_credentials) as user_credentials where users.id = user_credentials.user_id;

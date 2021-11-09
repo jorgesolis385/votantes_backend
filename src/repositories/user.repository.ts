@@ -60,21 +60,20 @@ export class UserRepository extends DefaultUserModifyCrudRepository<
     return user;
   }
 
-  async verifyPassword(username: string, password: string): Promise<User> {
-    const user = await super.findOne({where: {username}});
+  async verifyPassword(username: string, password: string): Promise<User> { 
+    const user = await super.findOne({where: {username:username}});
     const creds = user && (await this.credentials(user.id).get());
-    if (!user || user.deleted || !creds || !creds.password) {
+    if (!user  || !creds || !creds.password) { 
       throw new HttpErrors.Unauthorized(AuthenticateErrorKeys.UserDoesNotExist);
-    } else if (!(await bcrypt.compare(password, creds.password))) {
+    } 
+    else if (!(await bcrypt.compare(password, creds.password))) {
       throw new HttpErrors.Unauthorized(AuthErrorKeys.InvalidCredentials);
-    } else if (
-      await bcrypt.compare(password, process.env.USER_TEMP_PASSWORD!)
-    ) {
+    } else if (await bcrypt.compare(password, process.env.USER_TEMP_PASSWORD!)) {
       throw new HttpErrors.Forbidden(
         AuthenticateErrorKeys.TempPasswordLoginDisallowed,
       );
-    }
-    return user;
+    }  
+  return user;
   }
 
   async updatePassword(

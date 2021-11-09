@@ -61,6 +61,7 @@ export class RoleController {
 
   @authenticate(STRATEGY.BEARER)
   @authorize({permissions: [PermissionKey.ViewRole]})
+// @authorize({permissions: ['*']})
   @get('/roles', {
     responses: {
       '200': {

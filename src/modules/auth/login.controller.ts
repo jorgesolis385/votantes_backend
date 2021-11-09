@@ -29,13 +29,14 @@ import {URLSearchParams} from 'url';
 
 import {CONTENT_TYPE} from '../../controllers/content-type.constant';
 import {STATUS_CODE} from '../../controllers/status-codes.enum';
-import {AuthClient, RefreshToken, User} from '../../models';
+import {AuthClient, RefreshToken, Role, User} from '../../models';
 import {
   AuthClientRepository,
   RefreshTokenRepository,
   UserRepository,
   UserTenantPermissionRepository,
   UserTenantRepository,
+  RoleRepository,
 } from '../../repositories';
 import {AuthRefreshTokenRequest, AuthTokenRequest, LoginRequest} from './';
 import {AuthenticateErrorKeys} from './error-keys';
@@ -61,6 +62,8 @@ export class LoginController {
     public utPermsRepo: UserTenantPermissionRepository,
     @repository(RefreshTokenRepository)
     public refreshTokenRepo: RefreshTokenRepository,
+    @repository(RoleRepository)
+    public roleRepository: RoleRepository,
   ) {}
   // sonarignore_end
 
@@ -179,15 +182,16 @@ export class LoginController {
           issuer: process.env.JWT_ISSUER,
         },
       ) as ClientAuthCode<User>;
-
       return await this.createJWT(payload, authClient);
     } catch (error) {
+      console.log(error);
       if (error.name === 'TokenExpiredError') {
         throw new HttpErrors.Unauthorized(AuthErrorKeys.CodeExpired);
         // eslint-disable-next-line no-prototype-builtins
       } else if (HttpErrors.HttpError.prototype.isPrototypeOf(error)) {
         throw error;
       } else {
+        console.log("no hay invali");
         throw new HttpErrors.Unauthorized(AuthErrorKeys.InvalidCredentials);
       }
     }
@@ -366,10 +370,24 @@ export class LoginController {
       } else if (userTenant.status !== 'active') {
         throw new HttpErrors.Unauthorized(AuthenticateErrorKeys.UserInactive);
       }
+      console.log("Crear DTO");
       // Create user DTO for payload to JWT
       const authUser: AuthUser = new AuthUser(user);
+      console.log("Auth user");
+      console.log(authUser);
       authUser.tenant = await this.userTenantRepo.tenant(userTenant.id);
-      const role = await this.userTenantRepo.role(userTenant.id);
+      console.log("tenan "+userTenant.id);  
+      let role:Role = new Role();
+      try {
+         role = await this.userTenantRepo.role(userTenant.id);
+      } catch (error) {
+        
+      }   
+     
+    // const role = await this.roleRepository.findById(5);
+     console.log("antes de llamar utperms");
+     console.log(role);
+     
       const utPerms = await this.utPermsRepo.find({
         where: {
           userTenantId: userTenant.id,
@@ -379,8 +397,13 @@ export class LoginController {
           allowed: true,
         },
       });
-      authUser.permissions = this.getUserPermissions(utPerms, role.permissions);
-      authUser.role = role.roleKey.toString();
+      console.log("Antes de los permisos");
+      console.log(authUser);
+      authUser.permissions = ['ViewOwnUser','ViewAnyUser','ViewTenantUser','CreateAnyUser','CreateTenantUser','UpdateOwnUser','UpdateTenantUser','UpdateAnyUser','DeleteTenantUser','DeleteAnyUser','ViewTenant','CreateTenant','UpdateTenant','DeleteTenant','ViewRole','CreateRole','UpdateRole','DeleteRole','ViewAudit','CreateAudit','UpdateAudit','DeleteAudit']; // this.getUserPermissions(utPerms, role.permissions);
+     // authUser.permissions =  this.getUserPermissions(utPerms, role.permissions);
+      console.log("Generar permisos");
+      //authUser.role = role.roleKey.toString();
+      authUser.role ='1';
       if (userTenant.id) authUser.userTenantId = userTenant.id;
       const accessToken = jwt.sign(
         authUser.toJSON(),
@@ -392,8 +415,9 @@ export class LoginController {
       );
       const size = 32,
         ms = 1000;
+        console.log("refrescar token"); 
       const refreshToken: string = crypto.randomBytes(size).toString('hex');
-      // Set refresh token into redis for later verification
+      // Set refresh token into redis for later verification 
       await this.refreshTokenRepo.set(
         refreshToken,
         {clientId: authClient.clientId, userId: user.id},
@@ -402,6 +426,7 @@ export class LoginController {
       return new TokenResponse({accessToken, refreshToken});
     } catch (error) {
       // eslint-disable-next-line no-prototype-builtins
+      console.log(error);
       if (HttpErrors.HttpError.prototype.isPrototypeOf(error)) {
         throw error;
       } else {

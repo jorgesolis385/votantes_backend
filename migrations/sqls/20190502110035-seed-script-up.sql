@@ -1,5 +1,5 @@
 /* Replace with your SQL commands */
-SET search_path TO lbstarter,public;
+SET search_path TO votantes,public;
 
 insert into roles
   (id, name, role_key, permissions)
